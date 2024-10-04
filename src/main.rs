@@ -1,19 +1,19 @@
-use axum::{error_handling, routing::*, Error, Router};
-use reqwest::Client;
+use axum::{
+    response::{IntoResponse, Response},
+    routing::*,
+    Router,
+};
 
-const ENDPOINT_REQ: &str = "https://mempool.space/api/v1/lightning/nodes/rankings/connectivity";
+mod db;
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new();
-    let response = client
-        .get(ENDPOINT_REQ)
-        .send()
-        .await
-        .unwrap()
-        .text()
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let app = Router::new().route("/nodes", get(nodes));
+    axum::serve(listener, app).await.unwrap();
+}
 
-    dbg!(response);
+pub async fn nodes() -> Response {
+    let nodes = db::get_data().await.unwrap();
+    nodes.into_response()
 }
